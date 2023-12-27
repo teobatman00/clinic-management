@@ -6,6 +6,237 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+model Employees {
+  id           Int            @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  phoneNumber  String?
+  email        String         @unique
+  password     String
+  avatar       String?
+  address      String?
+  provinceId   Int?
+  branchId     Int
+  departmentId Int
+  roles        EmployeeRole[]
+  province     Provinces?     @relation(fields: [provinceId], references: [id])
+  branch       Branches       @relation(fields: [branchId], references: [id])
+  department   Departments    @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  bookings     Bookings[]
+  invoiceServices InvoiceServices[]
+  invoices      Invoices[]
+}
+
+model Roles {
+  id          Int            @id @default(autoincrement())
+  name        ERoles
+  description String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  employees   EmployeeRole[]
+}
+
+enum ERoles {
+  ADMIN
+  EMPLOYEE
+  BRANCH_MANAGER
+  GENERAL_MANAGER
+  DOCTOR
+  RECEPTIONIST
+}
+
+model EmployeeRole {
+  employee   Employees @relation(fields: [employeeId], references: [id])
+  employeeId Int
+  Roles       Roles     @relation(fields: [roleId], references: [id])
+  roleId     Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@id([employeeId, roleId])
+}
+
+model Branches {
+  id            Int                @id @default(autoincrement())
+  name          String
+  description   String?
+  address       String?
+  phoneNumber   String?
+  email         String             @unique
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  provinceId    Int?
+  province      Provinces?         @relation(fields: [provinceId], references: [id])
+  employees     Employees[]
+  department    DepartmentBranch[]
+  serviceBranch ServiceBranch[]
+  healthcarePackges HealthcarePackageBranch[]
+  patients      Patients[]
+  bookings      Bookings[]
+  invoices      Invoices[]
+}
+
+model Provinces {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  branches    Branches[]
+  employees   Employees[]
+  patients    Patients[]
+}
+
+model Departments {
+  id          Int                @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  employees   Employees[]
+  branches    DepartmentBranch[]
+}
+
+model DepartmentBranch {
+  branchId     Int
+  departmentId Int
+  branch       Branches    @relation(fields: [branchId], references: [id])
+  department   Departments @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@id([branchId, departmentId])
+}
+
+model Services {
+  id                  Int                @id @default(autoincrement())
+  name                String
+  description         String?
+  price               Decimal
+  avatar              String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  branches            ServiceBranch[]
+  serviceCategory   ServiceCategories? @relation(fields: [serviceCategoryId], references: [id])
+  serviceCategoryId Int?
+  healthcarePackageId Int?
+  healthcarePackage   HealthcarePackages? @relation(fields: [healthcarePackageId], references: [id])
+  invoiceServices     InvoiceServices[]
+}
+
+model ServiceBranch {
+  serviceId Int
+  branchId  Int
+  service   Services @relation(fields: [serviceId], references: [id])
+  branch    Branches @relation(fields: [branchId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([serviceId, branchId])
+}
+
+model ServiceCategories {
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  services    Services[]
+}
+
+model HealthcarePackages {
+  id          Int                @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  services Services[]
+  branches  HealthcarePackageBranch[]
+  bookings  Bookings[]
+  invoices  Invoices[]
+}
+
+model HealthcarePackageBranch {
+  healthcarePackageId Int
+  branchId            Int
+  healthcarePackage   HealthcarePackages @relation(fields: [healthcarePackageId], references: [id])
+  branch              Branches           @relation(fields: [branchId], references: [id])
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@id([healthcarePackageId, branchId])
+}
+
+model Patients {
+  id           Int            @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  phoneNumber  String
+  email        String         @unique
+  avatar       String?
+  address      String?
+  provinceId   Int?
+  branchId     Int
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  province     Provinces?     @relation(fields: [provinceId], references: [id])
+  branch       Branches       @relation(fields: [branchId], references: [id])
+  invoices     Invoices[]
+}
+
+model Bookings {
+  id           Int            @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  phoneNumber  String
+  email        String         
+  fromBookingTime DateTime
+  toBookingTime DateTime
+  isApproved   Boolean
+  note        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  branchId     Int
+  branch       Branches       @relation(fields: [branchId], references: [id])
+  employeeId   Int?
+  employee     Employees?     @relation(fields: [employeeId], references: [id])
+  healthcarePackageId Int?
+  healthcarePackage   HealthcarePackages? @relation(fields: [healthcarePackageId], references: [id])
+}
+
+model InvoiceServices {
+  id           Int            @id @default(autoincrement())
+  invoiceId    Int
+  serviceId    Int
+  service      Services @relation(fields: [serviceId], references: [id])
+  invoice      Invoices @relation(fields: [invoiceId], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  price        Decimal
+  quantity     Int
+  note         String?
+  employeeId   Int?
+  employee     Employees?     @relation(fields: [employeeId], references: [id])
+}
+
+model Invoices {
+  id           Int            @id @default(autoincrement())
+  branchId     Int
+  branch       Branches       @relation(fields: [branchId], references: [id])
+  patientId    Int
+  patient      Patients       @relation(fields: [patientId], references: [id])
+  healthcarePackageId Int?
+  healthcarePackage   HealthcarePackages? @relation(fields: [healthcarePackageId], references: [id])
+  invoiceServices InvoiceServices[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  note         String?
+  employeeId   Int?
+  employee     Employees?     @relation(fields: [employeeId], references: [id])
 }
